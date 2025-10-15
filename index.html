@@ -46,18 +46,12 @@
           .withSuccessHandler(res => {
             $("submitBtn").disabled = false;
             if (1) {
-  // Replace the last part of the path with the target file (relative redirect)
-  const targetFile = "home.html"; // <-- put the file you want here
+if (res && res.ok) {
+  // Redirect to a relative file in the same directory: ./home.html
+  const target = new URL('home.html', window.location.href);
+  window.location.replace(target.href);
+}
 
-  const url = new URL(window.location.href);
-  // If the URL ends with a filename, replace it; if it ends with a slash, append the file
-  url.pathname = url.pathname.replace(/[^/]*$/, "") + targetFile;
-
-  // Optional: clear search/hash if you don't want to keep them
-  url.search = "";   // remove ?query
-  url.hash   = "";   // remove #hash
-
-  window.location.replace(url.toString());
 }
  else {
               $("msg").style.display = "block";
