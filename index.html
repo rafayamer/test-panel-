@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Casa Bistro – Welcome</title>
+<style>
+  :root { --bg:#0f172a; --card:#111827; --text:#f8fafc; --muted:#94a3b8; --accent:#22c55e; --btn:#1f2937; --btn2:#0ea5e9; --warn:#f59e0b; }
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(160deg,#0b1224,#0f172a);}
+  .wrap{min-height:100svh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:520px;background:var(--card);border-radius:20px;padding:24px;box-shadow:0 10px 35px rgba(0,0,0,.45)}
+  h1{color:var(--text);font-size:22px;margin:0 0 6px} .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  .btn{display:flex;align-items:center;gap:12px;width:100%;padding:16px 18px;border:0;border-radius:14px;background:var(--btn);color:var(--text);font-size:18px;font-weight:600;text-decoration:none;justify-content:center}
+  .btn.menu{background:var(--btn2)} .btn.feedback{background:#10b981} .btn.wifi{background:#6366f1}
+  .small{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
+  .wifiBox{background:#0b1220;border:1px dashed #334155;border-radius:14px;padding:14px;margin-top:14px}
+  .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .pill{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cp{padding:10px 12px;border-radius:10px;background:#0ea5e9;color:white;border:0;font-weight:700}
+  .open{margin-top:10px;background:#22c55e} .hint{color:#cbd5e1;font-size:13px;margin-top:8px}
+  .icons{font-size:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Welcome to Casa Bistro 👋</h1>
+    <p class="sub">Choose an option below</p>
+
+    <div class="grid">
+      <a id="menuBtn" class="btn menu" href="#" target="_blank" rel="noopener">
+        <span class="icons">📜</span> Menu
+      </a>
+
+      <a id="fbBtn" class="btn feedback" href="#" target="_blank" rel="noopener">
+        <span class="icons">📝</span> Feedback
+      </a>
+
+      <button id="wifiBtn" class="btn wifi" type="button">
+        <span class="icons">📶</span> Join Wi-Fi
+      </button>
+    </div>
+
+    <div id="wifiPanel" class="wifiBox" hidden>
+      <div class="row" aria-label="Wi-Fi SSID">
+        <div class="pill" id="ssidText">SSID</div>
+        <button class="cp" id="copySsidBtn" type="button">Copy Name</button>
+      </div>
+      <div class="row" style="margin-top:8px" aria-label="Wi-Fi Password">
+        <div class="pill" id="passText">••••••••</div>
+        <button class="cp" id="copyPassBtn" type="button">Copy Password</button>
+      </div>
+      <button id="openWifi" class="cp open" type="button">Open Wi-Fi Settings</button>
+      <div class="hint">Tip: After settings open, Wi-Fi will reconnect automatically if saved. Otherwise, tap your network name and paste the password.</div>
+    </div>
+
+    <p class="small">Trouble? Ask staff for help. iPhone users: open Settings → Wi-Fi and use the name/password above.</p>
+  </div>
+</div>
+
+<script>
+/* ====== CONFIG – set your values here ====== */
+const WIFI_SSID   = "AJA 1203";   // e.g. "Casa Bistro"
+const WIFI_PASS   = "28365aja";     // e.g. "yourpassword"
+const MENU_URL    = "https://yourdomain.com/menu.pdf";
+const FEEDBACK_URL= "https://forms.gle/your-google-form-id";
+/* ========================================== */
+
+const el = (id)=>document.getElementById(id);
+el("menuBtn").href = MENU_URL;
+el("fbBtn").href   = FEEDBACK_URL;
+el("ssidText").textContent = WIFI_SSID;
+el("passText").textContent = WIFI_PASS.replace(/./g, "•"); // hide visually
+
+// reveal actual password on long press (for staff)
+el("passText").addEventListener("pointerdown", e=>{
+  e.currentTarget.textContent = WIFI_PASS;
+});
+el("passText").addEventListener("pointerup", e=>{
+  e.currentTarget.textContent = WIFI_PASS.replace(/./g, "•");
+});
+
+// copy helpers
+async function copyText(txt){
+  try {
+    await navigator.clipboard.writeText(txt);
+    alert("Copied!");
+  } catch { alert("Copy failed. Please long-press and copy."); }
+}
+el("copySsidBtn").onclick = ()=>copyText(WIFI_SSID);
+el("copyPassBtn").onclick = ()=>copyText(WIFI_PASS);
+
+// Join Wi-Fi flow
+el("wifiBtn").onclick = ()=>{
+  el("wifiPanel").hidden = false;
+  // try to open Android Wi-Fi settings (works in Chrome/Android)
+  // Fallback: open settings page with different intent syntaxes
+  const intents = [
+    "intent:#Intent;action=android.settings.WIFI_SETTINGS;end",
+    "intent://#Intent;action=android.settings.WIFI_SETTINGS;end"
+  ];
+  const a = document.createElement("a");
+  a.style.display="none";
+  a.rel = "noopener";
+  a.target = "_self";
+  a.href = intents[0];
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ // try second form if first blocked
+    a.href = intents[1];
+    a.click();
+    setTimeout(()=>document.body.removeChild(a), 1000);
+  }, 800);
+};
+
+// dedicated button if the first auto-open failed
+el("openWifi").onclick = ()=>{
+  window.location.href = "intent:#Intent;action=android.settings.WIFI_SETTINGS;end";
+};
+</script>
+</body>
+</html>
