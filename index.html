@@ -46,11 +46,20 @@
           .withSuccessHandler(res => {
             $("submitBtn").disabled = false;
             if (res && res.ok) {
-              // Redirect to the home page (menu/feedback/wifi) inside the same web app
-              const url = new URL(window.location.href);
-              url.searchParams.set('view','home');
-              window.location.replace(url.toString());
-            } else {
+  // Replace the last part of the path with the target file (relative redirect)
+  const targetFile = "home.html"; // <-- put the file you want here
+
+  const url = new URL(window.location.href);
+  // If the URL ends with a filename, replace it; if it ends with a slash, append the file
+  url.pathname = url.pathname.replace(/[^/]*$/, "") + targetFile;
+
+  // Optional: clear search/hash if you don't want to keep them
+  url.search = "";   // remove ?query
+  url.hash   = "";   // remove #hash
+
+  window.location.replace(url.toString());
+}
+ else {
               $("msg").style.display = "block";
               $("msg").textContent = "Could not save. Please try again.";
             }
