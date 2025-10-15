@@ -6,10 +6,13 @@
 <title>Casa Bistro – Welcome</title>
 <style>
   :root { --bg:#0f172a; --card:#111827; --text:#f8fafc; --muted:#94a3b8; --accent:#22c55e; --btn:#1f2937; --btn2:#0ea5e9; --warn:#f59e0b; }
-  *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(160deg,#0b1224,#0f172a);}
-  .wrap{min-height:100svh;display:flex;align-items:center;justify-content:center;padding:24px}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(160deg,#0b1224,#0f172a);}
+  /* Safari fallback for svh */
+  .wrap{min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;padding:24px}
   .card{width:100%;max-width:520px;background:var(--card);border-radius:20px;padding:24px;box-shadow:0 10px 35px rgba(0,0,0,.45)}
-  h1{color:var(--text);font-size:22px;margin:0 0 6px} .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  h1{color:var(--text);font-size:22px;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
   .grid{display:grid;grid-template-columns:1fr;gap:12px}
   .btn{display:flex;align-items:center;gap:12px;width:100%;padding:16px 18px;border:0;border-radius:14px;background:var(--btn);color:var(--text);font-size:18px;font-weight:600;text-decoration:none;justify-content:center}
   .btn.menu{background:var(--btn2)} .btn.feedback{background:#10b981} .btn.wifi{background:#6366f1}
@@ -18,8 +21,11 @@
   .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
   .pill{background:#111827;border:1px solid #334155;border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cp{padding:10px 12px;border-radius:10px;background:#0ea5e9;color:white;border:0;font-weight:700}
-  .open{margin-top:10px;background:#22c55e} .hint{color:#cbd5e1;font-size:13px;margin-top:8px}
+  .open{margin-top:10px;background:#22c55e}
+  .hint{color:#cbd5e1;font-size:13px;margin-top:8px}
   .icons{font-size:22px}
+  .banner{margin-top:10px;background:#1f2937;color:#e5e7eb;border-radius:10px;padding:10px 12px;font-size:13px;display:none}
+  .banner.show{display:block}
 </style>
 </head>
 <body>
@@ -52,71 +58,103 @@
         <button class="cp" id="copyPassBtn" type="button">Copy Password</button>
       </div>
       <button id="openWifi" class="cp open" type="button">Open Wi-Fi Settings</button>
-      <div class="hint">Tip: After settings open, Wi-Fi will reconnect automatically if saved. Otherwise, tap your network name and paste the password.</div>
+      <div id="iosBanner" class="banner">iPhone/iPad: Open <b>Settings → Wi-Fi</b>, tap “<span id="ssidInline"></span>”, then <b>Paste</b> the password you copied.</div>
+      <div class="hint">Tip: If your phone already knows this network, it should reconnect automatically when Wi-Fi is on.</div>
     </div>
 
-    <p class="small">Trouble? Ask staff for help. iPhone users: open Settings → Wi-Fi and use the name/password above.</p>
+    <p class="small">Trouble? Ask staff for help.</p>
   </div>
 </div>
 
 <script>
 /* ====== CONFIG – set your values here ====== */
-const WIFI_SSID   = "AJA 1203";   // e.g. "Casa Bistro"
-const WIFI_PASS   = "28365aja";     // e.g. "yourpassword"
-const MENU_URL    = "https://yourdomain.com/menu.pdf";
-const FEEDBACK_URL= "https://forms.gle/your-google-form-id";
+const WIFI_SSID    = "AJA 1203";             // Your Wi-Fi name
+const WIFI_PASS    = "28365aja";             // Your Wi-Fi password
+const MENU_URL     = "https://yourdomain.com/menu.pdf";
+const FEEDBACK_URL = "https://forms.gle/your-google-form-id";
 /* ========================================== */
 
-const el = (id)=>document.getElementById(id);
-el("menuBtn").href = MENU_URL;
-el("fbBtn").href   = FEEDBACK_URL;
-el("ssidText").textContent = WIFI_SSID;
-el("passText").textContent = WIFI_PASS.replace(/./g, "•"); // hide visually
+const $ = (id)=>document.getElementById(id);
+$("menuBtn").href = MENU_URL;
+$("fbBtn").href   = FEEDBACK_URL;
+$("ssidText").textContent = WIFI_SSID;
+$("ssidInline").textContent = WIFI_SSID;
 
-// reveal actual password on long press (for staff)
-el("passText").addEventListener("pointerdown", e=>{
-  e.currentTarget.textContent = WIFI_PASS;
-});
-el("passText").addEventListener("pointerup", e=>{
-  e.currentTarget.textContent = WIFI_PASS.replace(/./g, "•");
-});
+// Mask password visually but allow reveal on press (works on Safari & Chrome)
+const passEl = $("passText");
+const mask = s => s.replace(/./g, "•");
+passEl.textContent = mask(WIFI_PASS);
 
-// copy helpers
-async function copyText(txt){
+// Long-press reveal (pointer/touch/mouse)
+let pressTimer;
+function reveal(){ passEl.textContent = WIFI_PASS; }
+function hide(){ passEl.textContent = mask(WIFI_PASS); }
+["pointerdown","touchstart","mousedown"].forEach(evt => passEl.addEventListener(evt, ()=>{ clearTimeout(pressTimer); pressTimer=setTimeout(reveal,120); }));
+["pointerup","pointerleave","touchend","touchcancel","mouseup","mouseleave"].forEach(evt => passEl.addEventListener(evt, ()=>{ clearTimeout(pressTimer); hide(); }));
+
+// Clipboard helpers with Safari fallback
+async function copyText(text){
   try {
-    await navigator.clipboard.writeText(txt);
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback (older Safari/iOS): temporary input + execCommand
+      const i = document.createElement("input");
+      i.value = text;
+      document.body.appendChild(i);
+      i.select(); i.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      document.body.removeChild(i);
+    }
     alert("Copied!");
-  } catch { alert("Copy failed. Please long-press and copy."); }
+  } catch (e) {
+    alert("Copy failed. Please long-press and copy.");
+  }
 }
-el("copySsidBtn").onclick = ()=>copyText(WIFI_SSID);
-el("copyPassBtn").onclick = ()=>copyText(WIFI_PASS);
+$("copySsidBtn").onclick = ()=>copyText(WIFI_SSID);
+$("copyPassBtn").onclick = ()=>copyText(WIFI_PASS);
+
+// Simple UA detection to tailor behavior
+const ua = navigator.userAgent || "";
+const isAndroid = /Android/i.test(ua);
+const isChrome  = /Chrome|Chromium|CriOS/i.test(ua) && !/Edg/i.test(ua);
+const isIOS     = /iPhone|iPad|iPod/i.test(ua);
+const isSafari  = /^((?!chrome|android).)*safari/i.test(ua);
 
 // Join Wi-Fi flow
-el("wifiBtn").onclick = ()=>{
-  el("wifiPanel").hidden = false;
-  // try to open Android Wi-Fi settings (works in Chrome/Android)
-  // Fallback: open settings page with different intent syntaxes
-  const intents = [
-    "intent:#Intent;action=android.settings.WIFI_SETTINGS;end",
-    "intent://#Intent;action=android.settings.WIFI_SETTINGS;end"
-  ];
-  const a = document.createElement("a");
-  a.style.display="none";
-  a.rel = "noopener";
-  a.target = "_self";
-  a.href = intents[0];
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>{ // try second form if first blocked
-    a.href = intents[1];
+$("wifiBtn").onclick = ()=>{
+  $("wifiPanel").hidden = false;
+
+  // Show iOS tip banner explicitly
+  if (isIOS || isSafari) {
+    $("iosBanner").classList.add("show");
+  }
+
+  // On Android + Chrome/Samsung Internet, try to open Wi-Fi settings via intent
+  if (isAndroid) {
+    const intents = [
+      "intent:#Intent;action=android.settings.WIFI_SETTINGS;end",
+      "intent://#Intent;action=android.settings.WIFI_SETTINGS;end"
+    ];
+    const a = document.createElement("a");
+    a.style.display="none";
+    a.rel="noopener";
+    a.target="_self";
+    a.href=intents[0];
+    document.body.appendChild(a);
     a.click();
-    setTimeout(()=>document.body.removeChild(a), 1000);
-  }, 800);
+    setTimeout(()=>{ a.href=intents[1]; a.click(); setTimeout(()=>document.body.removeChild(a), 800); }, 600);
+  }
 };
 
-// dedicated button if the first auto-open failed
-el("openWifi").onclick = ()=>{
-  window.location.href = "intent:#Intent;action=android.settings.WIFI_SETTINGS;end";
+// Dedicated button in case auto intent was blocked by the browser
+$("openWifi").onclick = ()=>{
+  if (isAndroid) {
+    window.location.href = "intent:#Intent;action=android.settings.WIFI_SETTINGS;end";
+  } else {
+    // iOS cannot deep link to Wi-Fi settings; keep the banner visible
+    $("iosBanner").classList.add("show");
+  }
 };
 </script>
 </body>
