@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:#0f172a;color:#f8fafc}
+      .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+      .card{width:100%;max-width:480px;background:#111827;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+      h1{margin:0 0 8px;font-size:22px}
+      p{margin:0 0 16px;color:#cbd5e1}
+      label{display:block;margin:12px 0 6px;font-weight:600}
+      input{width:100%;padding:14px 12px;border-radius:12px;border:1px solid #334155;background:#0b1220;color:#f8fafc;font-size:16px}
+      button{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:#22c55e;color:#062e0c;font-weight:800;font-size:18px}
+      .err{margin-top:12px;background:#ef4444;color:white;display:none;padding:10px;border-radius:10px}
+      .hint{font-size:12px;color:#94a3b8;margin-top:8px}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>Casa Bistro</h1>
+        <p>Enter your name and WhatsApp number</p>
+
+        <label for="name">Customer Name</label>
+        <input id="name" type="text" placeholder="e.g., Ali Khan" autocomplete="name" required>
+
+        <label for="phone">WhatsApp Number</label>
+        <input id="phone" type="tel" placeholder="03XXXXXXXXX or +92XXXXXXXXXX" autocomplete="tel" required>
+        <div class="hint">We save numbers as +92… format.</div>
+
+        <button id="submitBtn">Submit</button>
+        <div id="msg" class="err"></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = id => document.getElementById(id);
+      $("submitBtn").addEventListener("click", function(){
+        const name = $("name").value.trim();
+        const phone = $("phone").value.trim();
+        $("submitBtn").disabled = true;
+        $("msg").style.display = "none";
+
+        google.script.run
+          .withSuccessHandler(res => {
+            $("submitBtn").disabled = false;
+            if (res && res.ok) {
+              // Redirect to the home page (menu/feedback/wifi) inside the same web app
+              const url = new URL(window.location.href);
+              url.searchParams.set('view','home');
+              window.location.replace(url.toString());
+            } else {
+              $("msg").style.display = "block";
+              $("msg").textContent = "Could not save. Please try again.";
+            }
+          })
+          .withFailureHandler(err => {
+            $("submitBtn").disabled = false;
+            $("msg").style.display = "block";
+            $("msg").textContent = err && err.message ? err.message : "Error. Please try again.";
+          })
+          .appendCustomer(name, phone);
+      });
+    </script>
+  </body>
+</html>
