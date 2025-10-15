@@ -39,7 +39,7 @@
       $("submitBtn").addEventListener("click", function(){
         const name = $("name").value.trim();
         const phone = $("phone").value.trim();
-        $("submitBtn").disabled = true;
+        $("submitBtn").disabled = false;
         $("msg").style.display = "none";
 
         google.script.run
