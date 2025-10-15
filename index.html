@@ -39,21 +39,17 @@
       $("submitBtn").addEventListener("click", function(){
         const name = $("name").value.trim();
         const phone = $("phone").value.trim();
-        $("submitBtn").disabled = false;
+        $("submitBtn").disabled = true;
         $("msg").style.display = "none";
 
-        google.script.run
-          .withSuccessHandler(res => {
+        google.script.run.withSuccessHandler(res => {
             $("submitBtn").disabled = false;
-            if (1) {
-if (res && res.ok) {
-  // Redirect to a relative file in the same directory: ./home.html
-  const target = new URL('home.html', window.location.href);
-  window.location.replace(target.href);
-}
-
-}
- else {
+            if (res && res.ok) {
+              // Redirect to the home page (menu/feedback/wifi) inside the same web app
+              const url = new URL(window.location.href);
+              url.searchParams.set('view','home');
+              window.location.replace(url.toString());
+            } else {
               $("msg").style.display = "block";
               $("msg").textContent = "Could not save. Please try again.";
             }
